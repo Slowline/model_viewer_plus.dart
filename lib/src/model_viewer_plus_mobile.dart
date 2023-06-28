@@ -20,19 +20,19 @@ class ModelViewerState extends State<ModelViewer> {
   late final WebViewController _controller;
 
   HttpServer? _proxy;
-  late String _proxyURL;
+  String _proxyURL = "";
 
   @override
   void initState() {
     super.initState();
+    _init();
   }
 
+  /// Initialize the Proxy Server and WebView
   Future<void> _init() async {
     // Initialize the Proxy & WebView
     await _initProxy();
     await _initWebView();
-
-    // Connect to the proxy.
     await _controller.loadRequest(Uri.parse(_proxyURL));
     widget.onWebViewCreated?.call(_controller);
   }
@@ -64,7 +64,8 @@ class ModelViewerState extends State<ModelViewer> {
           },
           onWebResourceError: (final WebResourceError error) {
             debugPrint(
-                '>>>> ModelViewer failed to load: ${error.description} (${error.errorType} ${error.errorCode})'); // DEBUG
+                '>>>> ModelViewer failed to load: ${error.description} (${error
+                    .errorType} ${error.errorCode})'); // DEBUG
           },
         ),
       );
@@ -120,7 +121,9 @@ class ModelViewerState extends State<ModelViewer> {
 
       // 2022-03-14 update
       final String fileURL =
-      ['http', 'https'].contains(Uri.parse(widget.src).scheme)
+      ['http', 'https'].contains(Uri
+          .parse(widget.src)
+          .scheme)
           ? widget.src
           : p.joinAll([_proxyURL, 'model']);
 
@@ -297,7 +300,7 @@ class ModelViewerState extends State<ModelViewer> {
 
         case '/model':
           if (url.isAbsolute && !url.isScheme("file")) {
-            // debugPrint(url.toString());
+            debugPrint(url.toString());
             await response.redirect(url); // TODO: proxy the resource
           } else {
             final data = await (url.isScheme("file")
