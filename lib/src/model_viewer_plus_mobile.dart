@@ -25,14 +25,19 @@ class ModelViewerState extends State<ModelViewer> {
   @override
   void initState() {
     super.initState();
-
-    // Initialize the Proxy.
-    _initProxy();
-
-    _initWebView();
   }
 
-  void _initWebView() async {
+  Future<void> _init() async {
+    // Initialize the Proxy & WebView
+    await _initProxy();
+    await _initWebView();
+
+    // Connect to the proxy.
+    await _controller.loadRequest(Uri.parse(_proxyURL));
+    widget.onWebViewCreated?.call(_controller);
+  }
+
+  Future<void> _initWebView() async {
     // Initialize with explicit WebKitParams to allow Media Playback.
     late final PlatformWebViewControllerCreationParams params;
     if (WebViewPlatform.instance is WebKitWebViewPlatform) {
@@ -52,10 +57,10 @@ class ModelViewerState extends State<ModelViewer> {
         NavigationDelegate(
           onNavigationRequest: (request) => _handleNavigationDelegate(request),
           onPageStarted: (final String url) {
-            //debugPrint('>>>> ModelViewer began loading: <$url>'); // DEBUG
+            debugPrint('>>>> ModelViewer began loading: <$url>'); // DEBUG
           },
           onPageFinished: (final String url) {
-            //debugPrint('>>>> ModelViewer finished loading: <$url>'); // DEBUG
+            debugPrint('>>>> ModelViewer finished loading: <$url>'); // DEBUG
           },
           onWebResourceError: (final WebResourceError error) {
             debugPrint(
@@ -73,8 +78,6 @@ class ModelViewerState extends State<ModelViewer> {
     }
 
     // debugPrint('>>>> ModelViewer initializing... <$_proxyURL>'); // DEBUG
-    await _controller.loadRequest(Uri.parse(_proxyURL));
-    widget.onWebViewCreated?.call(_controller);
   }
 
   @override
@@ -117,9 +120,9 @@ class ModelViewerState extends State<ModelViewer> {
 
       // 2022-03-14 update
       final String fileURL =
-          ['http', 'https'].contains(Uri.parse(widget.src).scheme)
-              ? widget.src
-              : p.joinAll([_proxyURL, 'model']);
+      ['http', 'https'].contains(Uri.parse(widget.src).scheme)
+          ? widget.src
+          : p.joinAll([_proxyURL, 'model']);
 
       final intent = android_content.AndroidIntent(
         action: "android.intent.action.VIEW",
@@ -141,7 +144,7 @@ class ModelViewerState extends State<ModelViewer> {
         package: "com.google.android.googlequicksearchbox",
         arguments: <String, dynamic>{
           'browser_fallback_url':
-              'market://details?id=com.google.android.googlequicksearchbox'
+          'market://details?id=com.google.android.googlequicksearchbox'
         },
       );
       await intent.launch().onError((error, stackTrace) {
@@ -170,7 +173,7 @@ class ModelViewerState extends State<ModelViewer> {
       // initialUrl: null,
       gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
         Factory<OneSequenceGestureRecognizer>(
-          () => EagerGestureRecognizer(),
+              () => EagerGestureRecognizer(),
         ),
       },
       // onWebViewCreated: (final WebViewController webViewController) async {
@@ -254,12 +257,12 @@ class ModelViewerState extends State<ModelViewer> {
     final url = Uri.parse(widget.src);
     _proxy = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
 
-    setState(() {
-      _proxy;
-      final host = _proxy!.address.address;
-      final port = _proxy!.port;
-      _proxyURL = "http://$host:$port/";
-    });
+    final host = _proxy!.address.address;
+    final port = _proxy!.port;
+    _proxyURL = "http://$host:$port/";
+
+    // Update State
+    setState(() {});
 
     _proxy!.listen((final HttpRequest request) async {
       //debugPrint("${request.method} ${request.uri}"); // DEBUG
